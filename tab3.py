@@ -21,6 +21,9 @@ def render_tab(df):
                            html.Div([html.Div([dcc.Graph(id='bar-weeksales')], style={'width': '50%'}),
                                      html.Div([dcc.Graph(id='choropleth-weeksales')], style={'width': '50%'})],
                                     style={'display': 'flex'})
-                       ])])
+                       ]),
+                       html.Div([html.Div([dcc.Graph(id='customers')], style={'width': '70%'}), html.Div([dcc.Graph(id='customers_age')], style={'width': '30%'})],
+                                style={'display': 'flex'})
+])
 
     return layout

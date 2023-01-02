@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import datetime as dt
 import os
@@ -16,7 +18,7 @@ class db:
     def __init__(self):
         self.transactions = db.transation_init()
         self.cc = pd.read_csv(r'db\country_codes.csv', index_col=0)
-        self.customers = pd.read_csv(r'db\customers.csv', index_col=0)
+        self.customers = db.customers_init()
         self.prod_info = pd.read_csv(r'db\prod_cat_info.csv')
 
     @staticmethod
@@ -49,6 +51,22 @@ class db:
         transactions['day'] = transactions['tran_date'].apply(lambda x: convert_day(x))
 
         return transactions
+
+    @staticmethod
+    def customers_init():
+
+        customers = pd.read_csv(r'db\customers.csv', index_col=0)
+        customers = pd.DataFrame(customers)
+
+        def convert_dates(x):
+            try:
+                return dt.datetime.strptime(x, '%d-%m-%Y')
+            except:
+                return dt.datetime.strptime(x, '%d/%m/%Y')
+
+        customers['DOB'] = customers['DOB'].apply(lambda x: convert_dates(x))
+
+        return customers
 
     def merge(self):
         df = self.transactions.join(
@@ -147,15 +165,6 @@ def tab2_barh_prod_subcat(chosen_cat):
 ## tab3 callbacks
 @app.callback(Output('bar-weeksales', 'figure'), Input('week-range', 'value'))
 def tab3_store_types(value):
-    day = {
-        0: 'Poniedziałek',
-        1: 'Wtorek',
-        2: 'Środa',
-        3: 'Czwartek',
-        4: 'Piątek',
-        5: 'Sobota',
-        6: 'Niedziela'
-    }
     truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
     grouped = truncated[truncated['total_amt'] > 0].groupby([pd.Grouper(key='day'), 'Store_type'])[
         'total_amt'].sum().round(2).unstack()
@@ -184,6 +193,66 @@ def tab3_choropleth_sales(value):
                     layout=go.Layout(title='Mapa', geo=dict(showframe=False, projection={'type': 'natural earth'})))
 
     return fig
+
+
+@app.callback(Output('customers', 'figure'), Input('week-range', 'value'))
+def tab3_customers(value):
+    day = {
+        0: 'Poniedziałek',
+        1: 'Wtorek',
+        2: 'Środa',
+        3: 'Czwartek',
+        4: 'Piątek',
+        5: 'Sobota',
+        6: 'Niedziela'
+    }
+    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+
+    truncated.drop(truncated[truncated['total_amt'] < 0].index, inplace=True)
+
+    fig = go.Figure(layout=go.Layout(title='Średnie zakupy na użytkownika', height=800, yaxis=dict(
+                          title_text="Dni tygodnia",
+                          ticktext=['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+                          tickvals=[0, 1, 2, 3, 4, 5, 6],
+                          tickmode="array",
+                          titlefont=dict(size=30),
+                      )))
+
+    for day_v in range(value[0], value[1] + 1):
+        fig.add_trace(go.Violin(y=truncated['day'][truncated['day'] == day_v],
+                                x=truncated['total_amt'][truncated['day'] == day_v],
+                                name=day[day_v],
+                                box_visible=True,
+                                meanline_visible=True
+                                )
+                      )
+    fig.update_traces(orientation='h')
+    return fig
+
+
+@app.callback(Output('customers_age', 'figure'), Input('week-range', 'value'))
+def tab3_customers_age(value):
+    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    truncated['Age'] = truncated['DOB'].apply(lambda x: (dt.datetime.now().year - x.year))
+    truncated['All'] = 7
+    fig = go.Figure(layout=go.Layout(title='Średni wiek użytkownika', height=800, xaxis=dict(
+        ticktext=["Struktura wiekowa"],
+        tickvals=[7],
+        tickmode="array",
+        titlefont=dict(size=30)
+    )
+                          )
+                    )
+
+    fig.add_trace(go.Violin(x=truncated['All'],
+                            y=truncated['Age'],
+                            name='Wiek',
+                            box_visible=True,
+                            meanline_visible=True
+                            )
+                  )
+    return fig
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
