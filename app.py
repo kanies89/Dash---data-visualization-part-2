@@ -9,7 +9,7 @@ import dash_auth
 import plotly.graph_objects as go
 import tab1
 import tab2
-
+import tab3
 
 class db:
     def __init__(self):
@@ -31,7 +31,21 @@ class db:
             except:
                 return dt.datetime.strptime(x, '%d/%m/%Y')
 
+        def convert_day(x):
+            day = {
+                0: 'Poniedziałek',
+                1: 'Wtorek',
+                2: 'Środa',
+                3: 'Czwartek',
+                4: 'Piątek',
+                5: 'Sobota',
+                6: 'Niedziela'
+            }
+
+            return dt.datetime.weekday(x)
+
         transactions['tran_date'] = transactions['tran_date'].apply(lambda x: convert_dates(x))
+        transactions['day'] = transactions['tran_date'].apply(lambda x: convert_day(x))
 
         return transactions
 
@@ -63,7 +77,8 @@ auth = dash_auth.BasicAuth(app, USERNAME_PASSWORD)
 app.layout = html.Div([html.Div([
     dcc.Tabs(id='tabs', value='tab-1', children=[
         dcc.Tab(label='Sprzedaż globalna', value='tab-1'),
-        dcc.Tab(label='Produkty', value='tab-2')
+        dcc.Tab(label='Produkty', value='tab-2'),
+        dcc.Tab(label='Kanały sprzedaży', value='tab-3')
     ]),
     html.Div(id='tabs-content')], style={'width': '80%', 'margin': 'auto'})], style={'height': '100%'})
 
@@ -74,6 +89,8 @@ def render_content(tab):
         return tab1.render_tab(df.merged)
     elif tab == 'tab-2':
         return tab2.render_tab(df.merged)
+    elif tab == 'tab-3':
+        return tab3.render_tab(df.merged)
 
 
 ## tab1 callbacks
@@ -123,6 +140,32 @@ def tab2_barh_prod_subcat(chosen_cat):
 
     data = traces
     fig = go.Figure(data=data, layout=go.Layout(barmode='stack', margin={'t': 20, }))
+    return fig
+
+## tab3 callbacks
+@app.callback(Output('bar-weeksales', 'figure'), [Input('week-range', 'start_date'), Input('week-range', 'end_date')])
+def tab3_store_types(start_date, end_date):
+    day = {
+        0: 'Poniedziałek',
+        1: 'Wtorek',
+        2: 'Środa',
+        3: 'Czwartek',
+        4: 'Piątek',
+        5: 'Sobota',
+        6: 'Niedziela'
+    }
+    truncated = df.merged[(df.merged['day'] >= start_date) & (df.merged['day'] <= end_date)]
+    grouped = truncated[truncated['total_amt'] > 0].groupby([pd.Grouper(key='day'), 'Store_type'])[
+        'total_amt'].sum().round(2).unstack()
+
+    traces = []
+    for col in grouped.columns:
+        traces.append(go.Bar(x=grouped.index, y=grouped[col], name=col, hoverinfo='text',
+                             hovertext=[f'{y / 1e3:.2f}k' for y in grouped[col].values]))
+
+    data = traces
+    fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5)))
+
     return fig
 
 if __name__ == '__main__':
