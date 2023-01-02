@@ -11,6 +11,7 @@ import tab1
 import tab2
 import tab3
 
+
 class db:
     def __init__(self):
         self.transactions = db.transation_init()
@@ -142,9 +143,10 @@ def tab2_barh_prod_subcat(chosen_cat):
     fig = go.Figure(data=data, layout=go.Layout(barmode='stack', margin={'t': 20, }))
     return fig
 
+
 ## tab3 callbacks
-@app.callback(Output('bar-weeksales', 'figure'), [Input('week-range', 'start_date'), Input('week-range', 'end_date')])
-def tab3_store_types(start_date, end_date):
+@app.callback(Output('bar-weeksales', 'figure'), Input('week-range', 'value'))
+def tab3_store_types(value):
     day = {
         0: 'Poniedziałek',
         1: 'Wtorek',
@@ -154,17 +156,32 @@ def tab3_store_types(start_date, end_date):
         5: 'Sobota',
         6: 'Niedziela'
     }
-    truncated = df.merged[(df.merged['day'] >= start_date) & (df.merged['day'] <= end_date)]
+    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
     grouped = truncated[truncated['total_amt'] > 0].groupby([pd.Grouper(key='day'), 'Store_type'])[
         'total_amt'].sum().round(2).unstack()
 
     traces = []
     for col in grouped.columns:
-        traces.append(go.Bar(x=grouped.index, y=grouped[col], name=col, hoverinfo='text',
+        traces.append(go.Bar(x=grouped.index.values, y=grouped[col], name=col, hoverinfo='text',
                              hovertext=[f'{y / 1e3:.2f}k' for y in grouped[col].values]))
 
     data = traces
     fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5)))
+
+    return fig
+
+
+@app.callback(Output('choropleth-weeksales', 'figure'), Input('week-range', 'value'))
+def tab3_choropleth_sales(value):
+    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    grouped = truncated[truncated['total_amt'] > 0].groupby('country')['total_amt'].sum().round(2)
+
+    trace0 = go.Choropleth(colorscale='Viridis', reversescale=True,
+                           locations=grouped.index, locationmode='country names',
+                           z=grouped.values, colorbar=dict(title='Sales'))
+    data = [trace0]
+    fig = go.Figure(data=data,
+                    layout=go.Layout(title='Mapa', geo=dict(showframe=False, projection={'type': 'natural earth'})))
 
     return fig
 

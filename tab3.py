@@ -19,7 +19,7 @@ def render_tab(df):
                            dcc.RangeSlider(id='week-range', min=0, max=6, step=1, marks=day,
                                            value=[df['day'].min(), df['day'].max()]),
                            html.Div([html.Div([dcc.Graph(id='bar-weeksales')], style={'width': '50%'}),
-                                     html.Div([dcc.Graph(id='choropleth-sales')], style={'width': '50%'})],
+                                     html.Div([dcc.Graph(id='choropleth-weeksales')], style={'width': '50%'})],
                                     style={'display': 'flex'})
                        ])])
 
