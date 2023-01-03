@@ -2,16 +2,6 @@ from dash import dcc
 from dash import html
 import plotly.graph_objects as go
 
-day = {
-    0: 'Poniedziałek',
-    1: 'Wtorek',
-    2: 'Środa',
-    3: 'Czwartek',
-    4: 'Piątek',
-    5: 'Sobota',
-    6: 'Niedziela'
-}
-
 
 def render_tab(df):
     layout = html.Div([html.H1('Kanały sprzedaży', style={'text-align': 'center'}),

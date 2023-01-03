@@ -2,6 +2,17 @@ import pandas as pd
 import datetime as dt
 import os
 
+day = {
+    0: 'Poniedziałek',
+    1: 'Wtorek',
+    2: 'Środa',
+    3: 'Czwartek',
+    4: 'Piątek',
+    5: 'Sobota',
+    6: 'Niedziela'
+}
+
+
 class db:
     def __init__(self):
         self.transactions = db.values_init('transactions')

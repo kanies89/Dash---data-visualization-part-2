@@ -1,5 +1,3 @@
-import pandas as pd
-import datetime as dt
 import dash
 from dash import dcc
 from dash import html
@@ -9,8 +7,7 @@ import plotly.graph_objects as go
 import tab1
 import tab2
 import tab3
-from db_class import db
-
+from db_class import *
 
 df = db()
 df.merge()
@@ -95,10 +92,9 @@ def tab2_barh_prod_subcat(chosen_cat):
 ## tab3 callbacks
 @app.callback(Output('bar-weeksales', 'figure'), Input('week-range', 'value'))
 def tab3_store_types(value):
-    truncated = pd.DataFrame()
-    for n in value:
-        z = df.merged[(df.merged['day'] == n)]
-        truncated = pd.concat([truncated, z], ignore_index=True)
+
+    truncated = df.merged[df.merged['day'].isin(value)]
+
     grouped = truncated[truncated['total_amt'] > 0].groupby([pd.Grouper(key='day'), 'Store_type'])[
         'total_amt'].sum().round(2).unstack()
 
@@ -122,10 +118,9 @@ def tab3_store_types(value):
 
 @app.callback(Output('choropleth-weeksales', 'figure'), Input('week-range', 'value'))
 def tab3_choropleth_sales(value):
-    truncated = pd.DataFrame()
-    for n in value:
-        z = df.merged[(df.merged['day'] == n)]
-        truncated = pd.concat([truncated, z], ignore_index=True)
+
+    truncated = df.merged[df.merged['day'].isin(value)]
+
     grouped = truncated[truncated['total_amt'] > 0].groupby('country')['total_amt'].sum().round(2)
 
     trace0 = go.Choropleth(colorscale='Viridis', reversescale=True,
@@ -140,19 +135,8 @@ def tab3_choropleth_sales(value):
 
 @app.callback(Output('customers', 'figure'), Input('week-range', 'value'))
 def tab3_customers(value):
-    day = {
-        0: 'Poniedziałek',
-        1: 'Wtorek',
-        2: 'Środa',
-        3: 'Czwartek',
-        4: 'Piątek',
-        5: 'Sobota',
-        6: 'Niedziela'
-    }
-    truncated = pd.DataFrame()
-    for n in value:
-        z = df.merged[(df.merged['day'] == n)]
-        truncated = pd.concat([truncated, z], ignore_index=True)
+
+    truncated = df.merged[df.merged['day'].isin(value)]
 
     truncated.drop(truncated[truncated['total_amt'] < 0].index, inplace=True)
 
@@ -173,17 +157,18 @@ def tab3_customers(value):
                                 )
                       )
     fig.update_traces(orientation='h')
+    fig.update_layout(legend_traceorder="reversed")
     return fig
 
 
 @app.callback(Output('customers_age', 'figure'), Input('week-range', 'value'))
 def tab3_customers_age(value):
-    truncated = pd.DataFrame()
-    for n in value:
-        z = df.merged[(df.merged['day'] == n)]
-        truncated = pd.concat([truncated, z], ignore_index=True)
+
+    truncated = df.merged[df.merged['day'].isin(value)]
+
     truncated['Age'] = truncated['DOB'].apply(lambda x: (dt.datetime.now().year - x.year))
     truncated['All'] = 7
+
     fig = go.Figure(layout=go.Layout(title='Średni wiek użytkownika', height=800, xaxis=dict(
         ticktext=["Struktura wiekowa kupujących w dane dni tygodnia"],
         tickvals=[7],
