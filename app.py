@@ -1,8 +1,5 @@
-import datetime
-
 import pandas as pd
 import datetime as dt
-import os
 import dash
 from dash import dcc
 from dash import html
@@ -12,74 +9,7 @@ import plotly.graph_objects as go
 import tab1
 import tab2
 import tab3
-
-
-class db:
-    def __init__(self):
-        self.transactions = db.transation_init()
-        self.cc = pd.read_csv(r'db\country_codes.csv', index_col=0)
-        self.customers = db.customers_init()
-        self.prod_info = pd.read_csv(r'db\prod_cat_info.csv')
-
-    @staticmethod
-    def transation_init():
-        transactions = pd.DataFrame()
-        src = r'db\transactions'
-        for filename in os.listdir(src):
-            transactions = transactions.append(pd.read_csv(os.path.join(src, filename), index_col=0))
-
-        def convert_dates(x):
-            try:
-                return dt.datetime.strptime(x, '%d-%m-%Y')
-            except:
-                return dt.datetime.strptime(x, '%d/%m/%Y')
-
-        def convert_day(x):
-            day = {
-                0: 'Poniedziałek',
-                1: 'Wtorek',
-                2: 'Środa',
-                3: 'Czwartek',
-                4: 'Piątek',
-                5: 'Sobota',
-                6: 'Niedziela'
-            }
-
-            return dt.datetime.weekday(x)
-
-        transactions['tran_date'] = transactions['tran_date'].apply(lambda x: convert_dates(x))
-        transactions['day'] = transactions['tran_date'].apply(lambda x: convert_day(x))
-
-        return transactions
-
-    @staticmethod
-    def customers_init():
-
-        customers = pd.read_csv(r'db\customers.csv', index_col=0)
-        customers = pd.DataFrame(customers)
-
-        def convert_dates(x):
-            try:
-                return dt.datetime.strptime(x, '%d-%m-%Y')
-            except:
-                return dt.datetime.strptime(x, '%d/%m/%Y')
-
-        customers['DOB'] = customers['DOB'].apply(lambda x: convert_dates(x))
-
-        return customers
-
-    def merge(self):
-        df = self.transactions.join(
-            self.prod_info.drop_duplicates(subset=['prod_cat_code']).set_index('prod_cat_code')['prod_cat'],
-            on='prod_cat_code', how='left')
-
-        df = df.join(
-            self.prod_info.drop_duplicates(subset=['prod_sub_cat_code']).set_index('prod_sub_cat_code')['prod_subcat'],
-            on='prod_subcat_code', how='left')
-
-        df = df.join(self.customers.join(self.cc, on='country_code').set_index('customer_Id'), on='cust_id')
-
-        self.merged = df
+from db_class import db
 
 
 df = db()
@@ -165,7 +95,10 @@ def tab2_barh_prod_subcat(chosen_cat):
 ## tab3 callbacks
 @app.callback(Output('bar-weeksales', 'figure'), Input('week-range', 'value'))
 def tab3_store_types(value):
-    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    truncated = pd.DataFrame()
+    for n in value:
+        z = df.merged[(df.merged['day'] == n)]
+        truncated = pd.concat([truncated, z], ignore_index=True)
     grouped = truncated[truncated['total_amt'] > 0].groupby([pd.Grouper(key='day'), 'Store_type'])[
         'total_amt'].sum().round(2).unstack()
 
@@ -175,14 +108,24 @@ def tab3_store_types(value):
                              hovertext=[f'{y / 1e3:.2f}k' for y in grouped[col].values]))
 
     data = traces
-    fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5)))
+    fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5), xaxis=dict(
+                          ticktext=['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+                          tickvals=[0, 1, 2, 3, 4, 5, 6],
+                          tickmode="array",
+                          titlefont=dict(size=30)
+    )
+                                                )
+                    )
 
     return fig
 
 
 @app.callback(Output('choropleth-weeksales', 'figure'), Input('week-range', 'value'))
 def tab3_choropleth_sales(value):
-    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    truncated = pd.DataFrame()
+    for n in value:
+        z = df.merged[(df.merged['day'] == n)]
+        truncated = pd.concat([truncated, z], ignore_index=True)
     grouped = truncated[truncated['total_amt'] > 0].groupby('country')['total_amt'].sum().round(2)
 
     trace0 = go.Choropleth(colorscale='Viridis', reversescale=True,
@@ -206,7 +149,10 @@ def tab3_customers(value):
         5: 'Sobota',
         6: 'Niedziela'
     }
-    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    truncated = pd.DataFrame()
+    for n in value:
+        z = df.merged[(df.merged['day'] == n)]
+        truncated = pd.concat([truncated, z], ignore_index=True)
 
     truncated.drop(truncated[truncated['total_amt'] < 0].index, inplace=True)
 
@@ -218,7 +164,7 @@ def tab3_customers(value):
                           titlefont=dict(size=30),
                       )))
 
-    for day_v in range(value[0], value[1] + 1):
+    for day_v in value:
         fig.add_trace(go.Violin(y=truncated['day'][truncated['day'] == day_v],
                                 x=truncated['total_amt'][truncated['day'] == day_v],
                                 name=day[day_v],
@@ -232,11 +178,14 @@ def tab3_customers(value):
 
 @app.callback(Output('customers_age', 'figure'), Input('week-range', 'value'))
 def tab3_customers_age(value):
-    truncated = df.merged[(df.merged['day'] >= value[0]) & (df.merged['day'] <= value[1])]
+    truncated = pd.DataFrame()
+    for n in value:
+        z = df.merged[(df.merged['day'] == n)]
+        truncated = pd.concat([truncated, z], ignore_index=True)
     truncated['Age'] = truncated['DOB'].apply(lambda x: (dt.datetime.now().year - x.year))
     truncated['All'] = 7
     fig = go.Figure(layout=go.Layout(title='Średni wiek użytkownika', height=800, xaxis=dict(
-        ticktext=["Struktura wiekowa"],
+        ticktext=["Struktura wiekowa kupujących w dane dni tygodnia"],
         tickvals=[7],
         tickmode="array",
         titlefont=dict(size=30)
@@ -244,9 +193,18 @@ def tab3_customers_age(value):
                           )
                     )
 
-    fig.add_trace(go.Violin(x=truncated['All'],
+    fig.add_trace(go.Violin(x=truncated['All'][truncated['Gender'] == 'M'],
                             y=truncated['Age'],
-                            name='Wiek',
+                            name='Wiek mężczyzn',
+                            side='negative',
+                            box_visible=True,
+                            meanline_visible=True
+                            )
+                  )
+    fig.add_trace(go.Violin(x=truncated['All'][truncated['Gender'] == 'F'],
+                            y=truncated['Age'],
+                            name='Wiek kobiet',
+                            side='positive',
                             box_visible=True,
                             meanline_visible=True
                             )
