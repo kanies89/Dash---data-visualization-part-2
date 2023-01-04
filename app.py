@@ -144,7 +144,7 @@ def tab3_customers(value):
 
     fig = go.Figure(layout=go.Layout(title='Średnie zakupy na użytkownika', height=800, yaxis=dict(
                           title_text="Dni tygodnia",
-                          ticktext=['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+                          ticktext=[day[0], day[1], day[2], day[3], day[4], day[5], day[6]],
                           tickvals=[0, 1, 2, 3, 4, 5, 6],
                           tickmode="array",
                           titlefont=dict(size=30),
