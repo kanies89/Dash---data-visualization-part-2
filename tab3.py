@@ -1,5 +1,6 @@
 from dash import dcc
 from dash import html
+from db_class import day
 import plotly.graph_objects as go
 
 
@@ -8,13 +9,13 @@ def render_tab(df):
                        html.Div([
                            dcc.Checklist(id="week-range",
                                          options=[
-                                             {'label': 'Poniedziałek', 'value': 0},
-                                             {'label': 'Wtorek', 'value': 1},
-                                             {'label': 'Środa', 'value': 2},
-                                             {'label': 'Czwartek', 'value': 3},
-                                             {'label': 'Piątek', 'value': 4},
-                                             {'label': 'Sobota', 'value': 5},
-                                             {'label': 'Niedziela', 'value': 6}
+                                             {'label': day[0], 'value': 0},
+                                             {'label': day[1], 'value': 1},
+                                             {'label': day[2], 'value': 2},
+                                             {'label': day[3], 'value': 3},
+                                             {'label': day[4], 'value': 4},
+                                             {'label': day[5], 'value': 5},
+                                             {'label': day[6], 'value': 6}
                                          ],
                                          value=[0, 1, 2, 3, 4, 5, 6]
                                          ),

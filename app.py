@@ -3,11 +3,13 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
 import dash_auth
+import pandas as pd
+import datetime as dt
 import plotly.graph_objects as go
 import tab1
 import tab2
 import tab3
-from db_class import *
+from db_class import day, db
 
 df = db()
 df.merge()
@@ -105,7 +107,7 @@ def tab3_store_types(value):
 
     data = traces
     fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5), xaxis=dict(
-                          ticktext=['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'],
+                          ticktext=[day[0], day[1], day[2], day[3], day[4], day[5], day[6]],
                           tickvals=[0, 1, 2, 3, 4, 5, 6],
                           tickmode="array",
                           titlefont=dict(size=30)
