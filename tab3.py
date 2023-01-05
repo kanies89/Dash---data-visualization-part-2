@@ -4,20 +4,18 @@ from db_class import day
 import plotly.graph_objects as go
 
 
+def day_list():
+    x = []
+    for i, el in enumerate(list(day.values())):
+        x.append(dict(label=el, value=i))
+    return x
+
 def render_tab(df):
     layout = html.Div([html.H1('Kanały sprzedaży', style={'text-align': 'center'}),
                        html.Div([
                            dcc.Checklist(id="week-range",
-                                         options=[
-                                             {'label': day[0], 'value': 0},
-                                             {'label': day[1], 'value': 1},
-                                             {'label': day[2], 'value': 2},
-                                             {'label': day[3], 'value': 3},
-                                             {'label': day[4], 'value': 4},
-                                             {'label': day[5], 'value': 5},
-                                             {'label': day[6], 'value': 6}
-                                         ],
-                                         value=[0, 1, 2, 3, 4, 5, 6]
+                                         options=day_list(),
+                                         value=list(day.keys())
                                          ),
                            html.Div([html.Div([dcc.Graph(id='bar-weeksales')], style={'width': '50%'}),
                                      html.Div([dcc.Graph(id='choropleth-weeksales')], style={'width': '50%'})],
@@ -35,3 +33,9 @@ def render_tab(df):
                        ])
 
     return layout
+
+
+print(list(day.values()))
+
+print(dict(list(enumerate(list(day.values())))))
+print(enumerate(dict(labels=list(day.keys()), values=1)))

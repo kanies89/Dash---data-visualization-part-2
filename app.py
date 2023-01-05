@@ -107,8 +107,8 @@ def tab3_store_types(value):
 
     data = traces
     fig = go.Figure(data=data, layout=go.Layout(title='Kanały sprzedaży', barmode='stack', legend=dict(x=0, y=-0.5), xaxis=dict(
-                          ticktext=[day[0], day[1], day[2], day[3], day[4], day[5], day[6]],
-                          tickvals=[0, 1, 2, 3, 4, 5, 6],
+                          ticktext=list(day.values()),
+                          tickvals=list(day.keys()),
                           tickmode="array",
                           titlefont=dict(size=30)
     )
@@ -144,8 +144,8 @@ def tab3_customers(value):
 
     fig = go.Figure(layout=go.Layout(title='Średnie zakupy na użytkownika', height=800, yaxis=dict(
                           title_text="Dni tygodnia",
-                          ticktext=[day[0], day[1], day[2], day[3], day[4], day[5], day[6]],
-                          tickvals=[0, 1, 2, 3, 4, 5, 6],
+                          ticktext=list(day.values()),
+                          tickvals=list(day.keys()),
                           tickmode="array",
                           titlefont=dict(size=30),
                       )))
